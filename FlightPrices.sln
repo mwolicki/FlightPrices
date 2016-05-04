@@ -1,0 +1,17 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "FlightPrices", "FlightPrices\FlightPrices.fsproj", "{A9B3996C-BFBE-4EF1-8A8E-544CE0476B81}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A9B3996C-BFBE-4EF1-8A8E-544CE0476B81}.Debug|x86.ActiveCfg = Debug|x86
+		{A9B3996C-BFBE-4EF1-8A8E-544CE0476B81}.Debug|x86.Build.0 = Debug|x86
+		{A9B3996C-BFBE-4EF1-8A8E-544CE0476B81}.Release|x86.ActiveCfg = Release|x86
+		{A9B3996C-BFBE-4EF1-8A8E-544CE0476B81}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+EndGlobal
