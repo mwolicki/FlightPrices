@@ -8,7 +8,7 @@ open System
 
 type Places = JsonProvider<"places.json">
 type Flights = JsonProvider<"flights.json">
-type FlightData = {Departure:DateTime; Arrival:DateTime; Carriers : string list }
+type FlightData = {Departure:DateTime; Arrival:DateTime; Carriers : string array }
                   override d.ToString() = sprintf "%O - %s [%s]" d.Departure (d.Arrival.ToShortTimeString()) (d.Carriers |> String.concat ", ")
 type Flight = { Outbound:FlightData
                 Inbound:FlightData
@@ -41,24 +41,26 @@ let getFlights originplace destinationplace (outbounddate:DateTime) (inbounddate
     let carriers = flights.Carriers |> Array.map(fun x->x.Id, x) |> Map.ofArray
     let getCarrierName id = carriers.[id].Name
 
-    return flights.Itineraries 
-            |> Array.map(fun y->
-                let inbound = legs.[y.InboundLegId]
-                let outbound = legs.[y.OutboundLegId]
+    return 
+        flights.Itineraries 
+        |> Array.map(fun y->
+            let inbound = legs.[y.InboundLegId]
+            let outbound = legs.[y.OutboundLegId]
 
-                { Inbound = { Departure = inbound.Departure; Arrival = inbound.Arrival; Carriers = inbound.Carriers |> Array.map getCarrierName |> List.ofArray }
-                  Outbound = { Departure = outbound.Departure; Arrival = outbound.Arrival; Carriers = outbound.Carriers |> Array.map getCarrierName |> List.ofArray }
-                  Price = y.PricingOptions |> Array.map(fun p->p.Price) |> Array.min
-                }) |> List.ofArray}
+            { Inbound = { Departure = inbound.Departure; Arrival = inbound.Arrival; Carriers = inbound.Carriers |> Array.map getCarrierName }
+              Outbound = { Departure = outbound.Departure; Arrival = outbound.Arrival; Carriers = outbound.Carriers |> Array.map getCarrierName }
+              Price = y.PricingOptions |> Array.map(fun p->p.Price) |> Array.min
+            })}
 
 
-[ for i = 0 to 15 do
-    let addDays = i * 7 |> float
-    yield DateTime(2016,5,6, 20,0,0).AddDays addDays, DateTime(2016,5,9).AddDays addDays
-    yield DateTime(2016,5,5, 20,0,0).AddDays addDays, DateTime(2016,5,9).AddDays addDays]
-|> List.map (fun (a,b) -> getFlights "LOND-sky" "POZ" a b)
-|> Async.Parallel
-|> Async.RunSynchronously
-|> Seq.collect id
-|> Seq.sortBy (fun x->x.Price) 
-|> Seq.iter (fun x-> printfn "%M GBP\t %O <--> %O" x.Price x.Outbound x.Inbound)
+let data =
+    [ for i = 0 to 15 do
+        let addDays = i * 7 |> float
+        yield DateTime(2016,5,6, 20,0,0).AddDays addDays, DateTime(2016,5,9).AddDays addDays
+        yield DateTime(2016,5,5, 20,0,0).AddDays addDays, DateTime(2016,5,9).AddDays addDays]
+    |> List.map (fun (a,b) -> getFlights "LOND-sky" "POZ" a b)
+    |> Async.Parallel
+    |> Async.RunSynchronously
+    |> Array.collect id
+    |> Array.sortBy (fun x->x.Price) 
+data |> Array.iter (fun x-> printfn "%M GBP\t %O <--> %O" x.Price x.Outbound x.Inbound)
