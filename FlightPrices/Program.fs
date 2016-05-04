@@ -14,28 +14,24 @@ type Flight = { Outbound:FlightData
                 Inbound:FlightData
                 Price:decimal}
 
-
-let url = @"http://partners.api.skyscanner.net/apiservices/pricing/v1.0"
-
-
-let getAirport q =
-    @"http://partners.api.skyscanner.net/apiservices/autosuggest/v1.0/GB/GBP/en-GB?query=" + q + @"&apiKey=" + apiKey
+let getAirport query =
+    @"http://partners.api.skyscanner.net/apiservices/autosuggest/v1.0/GB/GBP/en-GB?query=" + query + @"&apiKey=" + apiKey
     |> Places.AsyncLoad 
 
 let getFlights originplace destinationplace (outbounddate:DateTime) (inbounddate:DateTime) = async {
+    let url = @"http://partners.api.skyscanner.net/apiservices/pricing/v1.0"
     let param = 
-        ["apiKey", apiKey
-         "country", "UK"
-         "currency", "GBP"
-         "locale", "en-GB"
-         "originplace", originplace
-         "destinationplace", destinationplace
-         "outbounddate", outbounddate.ToString("yyyy-MM-dd")
-         "inbounddate", inbounddate.ToString("yyyy-MM-dd")
-         "adults","1"
-         "locationschema", "iata"
-         ]
-    let! resp = Http.AsyncRequestStream(url, silentHttpErrors = false, body = FormValues param)
+        seq [ "apiKey", apiKey
+              "country", "UK"
+              "currency", "GBP"
+              "locale", "en-GB"
+              "originplace", originplace
+              "destinationplace", destinationplace
+              "outbounddate", outbounddate.ToString("yyyy-MM-dd")
+              "inbounddate", inbounddate.ToString("yyyy-MM-dd")
+              "adults", "1"
+              "locationschema", "iata"] |> FormValues
+    let! resp = Http.AsyncRequestStream(url, silentHttpErrors = false, body =  param)
 
     let! flights = resp.Headers.["Location"] + "?apiKey=" + apiKey 
                     + "&outbounddepartstarttime=" + outbounddate.ToString("HH:mm") 
@@ -56,18 +52,13 @@ let getFlights originplace destinationplace (outbounddate:DateTime) (inbounddate
                 }) |> List.ofArray}
 
 
-let res = 
-    [ for i = 0 to 15 do
-        yield DateTime(2016,5,6, 20,0,0).AddDays(i * 7 |> float), DateTime(2016,5,9).AddDays(i * 7 |> float)
-        yield DateTime(2016,5,5, 20,0,0).AddDays(i * 7 |> float), DateTime(2016,5,9).AddDays(i * 7 |> float)]
-    |> List.map (fun (a,b) -> getFlights "LOND-sky" "POZ" a b)
-    |> Async.Parallel
-    |> Async.RunSynchronously
-    |> Seq.collect id
-    |> List.ofSeq
-
-res |> List.minBy (fun x->x.Price) |> printfn "%A"
-
-
-
-res |> List.sortBy (fun x->x.Price) |> List.iter (fun x-> printfn "%M GBP\t %O <--> %O" x.Price x.Outbound x.Inbound)
+[ for i = 0 to 15 do
+    let addDays = i * 7 |> float
+    yield DateTime(2016,5,6, 20,0,0).AddDays addDays, DateTime(2016,5,9).AddDays addDays
+    yield DateTime(2016,5,5, 20,0,0).AddDays addDays, DateTime(2016,5,9).AddDays addDays]
+|> List.map (fun (a,b) -> getFlights "LOND-sky" "POZ" a b)
+|> Async.Parallel
+|> Async.RunSynchronously
+|> Seq.collect id
+|> Seq.sortBy (fun x->x.Price) 
+|> Seq.iter (fun x-> printfn "%M GBP\t %O <--> %O" x.Price x.Outbound x.Inbound)
